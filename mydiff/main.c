@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define MAX_LINE_LENGTH (pow(2, sizeof(int) * 8 - 1))
 
 void printUsage();
 void printFileDoesNotExist(char const *filename);
@@ -114,6 +118,12 @@ int compareFiles(FILE *fileOne, FILE *fileTwo, int caseSensitive) {
       }
 
       if (characterOne != characterTwo) {
+        if (characterCount >= MAX_LINE_LENGTH) {
+          (void) printf("%s\n", "Line differences are way too big! They exceed the maximum differences per line.");
+          (void) printf("Maximum line differences: %e\n", MAX_LINE_LENGTH);
+          exit(1);
+        }
+
         ++characterCount;
         // Debug
         // (void) printf("%c is not %c\n", characterOne, characterTwo);
