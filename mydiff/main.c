@@ -10,7 +10,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define MAX_LINE_LENGTH (pow(2, sizeof(int) * 8 - 1))
+// #define MAX_LINE_LENGTH (pow(2, sizeof(int) * 8 - 1))
+#define MAX_LINE_LENGTH 100000
 
 void printUsage();
 void printFileDoesNotExist(char const *filename);
@@ -67,7 +68,7 @@ int main(int argc, char const *argv[]) {
  * Prints the usage of 'mydiff'.
  */
 void printUsage() {
-  (void) printf("%s\n", "Usage: mydiff [-i] file1 file2");
+  (void) fprintf(stderr, "%s\n", "Usage: mydiff [-i] file1 file2");
 }
 
 /**
@@ -76,7 +77,7 @@ void printUsage() {
  * @param filename The filename of the file which does not exist.
  */
 void printFileDoesNotExist(char const *filename) {
-  (void) printf("%s %s %s\n", "mydiff: File", filename, "does not exist!");
+  (void) fprintf(stderr, "%s %s %s\n", "mydiff: File", filename, "does not exist!");
 }
 
 /**
@@ -119,8 +120,8 @@ int compareFiles(FILE *fileOne, FILE *fileTwo, int caseSensitive) {
 
       if (characterOne != characterTwo) {
         if (characterCount >= MAX_LINE_LENGTH) {
-          (void) printf("%s\n", "Line differences are way too big! They exceed the maximum differences per line.");
-          (void) printf("Maximum line differences: %e\n", MAX_LINE_LENGTH);
+          (void) fprintf(stderr, "%s\n", "Line differences are way too big! They exceed the maximum differences per line.");
+          (void) fprintf(stderr, "Maximum line differences: %d\n", MAX_LINE_LENGTH);
           exit(1);
         }
 
