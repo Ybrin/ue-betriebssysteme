@@ -132,7 +132,7 @@ static void usage(void)
     exit(EXIT_FAILURE);
 }
 
-static void getHashForFilePath(char *filepath)
+static char *getHashForFilePath(char *filepath)
 {
-
+  return "";
 }
