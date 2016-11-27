@@ -1,1 +1,1 @@
-cmd: cd mydiff && make all && doxygen Doxyfile && cd .. && cd mastermind && make all && doxygen Doxyfile && cd ..
+cmd: cd mydiff && make all && doxygen Doxyfile && cd .. && cd mastermind && make all && doxygen Doxyfile && cd .. && cd hashsum && make all && cd ..

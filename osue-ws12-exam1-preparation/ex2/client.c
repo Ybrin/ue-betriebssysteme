@@ -115,7 +115,7 @@ int main(int argc, char **argv)
   		(void) usage();
   	}
 
-  	(void) memset(&sa, '0', sizeof(sa));
+  	// (void) memset(&sa, '0', sizeof(sa));
 
   	sa.sin_family = AF_INET;
   	sa.sin_port = htons(server_port);
