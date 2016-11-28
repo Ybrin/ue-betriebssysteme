@@ -28,6 +28,12 @@ static char *getResultForFile(char *path, char *command);
 
 static int isFile(char *path);
 
+/** The starting point of the program
+ *
+ * @param argc the number of arguments
+ * @param argv the arguments
+ * @return 0 if successful, something other if not
+ */
 int main(int argc, char **argv)
 {
     char *ignore = NULL;
@@ -133,8 +139,9 @@ int main(int argc, char **argv)
             continue;
           }
 
-
+          printf("%s\n", tmpPath);
           char *hash = getResultForFile(tmpPath, "md5sum");
+          printf("%s\n", tmpPath);
           char *fileType = getResultForFile(tmpPath, "file");
           // printf("%s %s %s", line, hash, fileType);
 
@@ -164,6 +171,9 @@ int main(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 
+/**
+ * Prints the usage of this program and terminates with EXIT_FAILURE
+ */
 static void usage(void)
 {
     (void) fprintf(stderr, "Usage: %s [-i ignoreprefix] <directory>\n",
@@ -171,6 +181,15 @@ static void usage(void)
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Executes the given command with the given path as the
+ * only argument. Returns the first line which this command
+ * outputs to stout.
+ *
+ * @param path the path to the file
+ * @param command the command which should be executed
+ * @return the string which will be returned by the given command
+ */
 static char *getResultForFile(char *path, char *command)
 {
   // Create pipe
@@ -230,6 +249,12 @@ static char *getResultForFile(char *path, char *command)
   return "";
 }
 
+/**
+ * Returns 1 iff the given path is a file, 0 otherwise
+ *
+ * @param path the path to the assumpted file
+ * @return 1 if the given path points to a file, 0 if not
+ */
 static int isFile(char *path)
 {
   // printf("%s\n", path);
