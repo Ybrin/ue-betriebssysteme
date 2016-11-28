@@ -139,9 +139,9 @@ int main(int argc, char **argv)
             continue;
           }
 
-          printf("%s\n", tmpPath);
+          // printf("%s\n", tmpPath);
           char *hash = getResultForFile(tmpPath, "md5sum");
-          printf("%s\n", tmpPath);
+          // printf("%s\n", tmpPath);
 
           // WORKAROUND
           char *tmpTmpPath = strdup(path);
