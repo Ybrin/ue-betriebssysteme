@@ -133,13 +133,15 @@ int main(int argc, char **argv)
 
           strcat(strcat(strcat(line, " "), strcat(hash, " ")), fileType);
 
+          (void) printf("%s\n", line);
+
           // Remove newline characters
           char *k;
           if ((k = strchr(line, '\n')) != NULL) { *k = '\0'; }
 
           (void) printf("%s\n", line);
 
-          free(tmpPath);
+          // free(tmpPath);
       }
     } else {
       close(fd[0]);
