@@ -129,8 +129,7 @@ int main(int argc, char **argv)
             continue;
           }
           char *hash = getHash(tmpPath);
-          printf("%s ", line);
-          printf("%s", hash);
+          printf("%s %s", line, hash);
       }
     } else {
       close(fd[0]);
