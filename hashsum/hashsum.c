@@ -24,7 +24,7 @@ static char *program_name = "client";
 // Exits the program with an error message
 static void usage(void);
 
-static char *getHash(char *path, char *filename);
+static char *getHash(char *path);
 
 static int isFile(char *path);
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
             // printf("%s\n", "Is this a file? This is not a file!");
             continue;
           }
-          char *hash = getHash(path, line);
+          char *hash = getHash(tmpPath);
           printf("%s ", line);
           printf("%s", hash);
       }
@@ -153,7 +153,7 @@ static void usage(void)
     exit(EXIT_FAILURE);
 }
 
-static char *getHash(char *path, char *filename)
+static char *getHash(char *path)
 {
   // Create pipe
   int fd[2];
@@ -203,10 +203,8 @@ static char *getHash(char *path, char *filename)
 
     dup2(fd[1], STDOUT_FILENO);
 
-    char *pathToFile = strcat(strcat(path, "/"), filename);
-    printf("%s\n", pathToFile);
     // we are the child
-    char *cmd[] = { "md5sum", pathToFile, (char *) 0 };
+    char *cmd[] = { "md5sum", path, (char *) 0 };
     (void) execvp ("md5sum", cmd);
     assert(0);   // exec never returns
   }
