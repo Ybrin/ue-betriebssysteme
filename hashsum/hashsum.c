@@ -118,8 +118,9 @@ int main(int argc, char **argv)
           strcat(strcat(tmpPath, "/"), line);
 
           // Remove newline characters
-          char *s;
-          if ((s = strchr(tmpPath, '\n')) != NULL) { *s = '\0'; }
+          // char *s;
+          // if ((s = strchr(tmpPath, '\n')) != NULL) { *s = '\0'; }
+          strtok(tmpPath, "\n");
 
           if (!isFile(tmpPath)) {
             // printf("%s\n", tmpPath);
@@ -221,7 +222,6 @@ static char *getResultForFile(char *path, char *command)
     dup2(fd[1], STDOUT_FILENO);
 
     // we are the child
-    printf("%s\n", path);
     char *cmd[] = { command, path, (char *) 0 };
     (void) execvp (command, cmd);
     assert(0);   // exec never returns
