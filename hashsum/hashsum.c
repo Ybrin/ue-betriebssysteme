@@ -140,9 +140,11 @@ int main(int argc, char **argv)
           }
 
           printf("%s\n", tmpPath);
-          char *hash = getResultForFile(strdup(tmpPath), "md5sum");
+          char *tmpTmpPath = strdup(tmpPath);
+          char *hash = getResultForFile(tmpTmpPath, "md5sum");
           printf("%s\n", tmpPath);
-          char *fileType = getResultForFile(strdup(tmpPath), "file");
+          char *tmpSecondPath = strdup(tmpPath);
+          char *fileType = getResultForFile(tmpSecondPath, "file");
           // printf("%s %s %s", line, hash, fileType);
 
           strcat(strcat(strcat(line, " "), strcat(hash, " ")), fileType);
