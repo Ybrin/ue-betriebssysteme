@@ -221,6 +221,7 @@ static char *getResultForFile(char *path, char *command)
     dup2(fd[1], STDOUT_FILENO);
 
     // we are the child
+    printf("%s\n", path);
     char *cmd[] = { command, path, (char *) 0 };
     (void) execvp (command, cmd);
     assert(0);   // exec never returns
