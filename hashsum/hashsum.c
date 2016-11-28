@@ -112,8 +112,7 @@ int main(int argc, char **argv)
 
       while ((read = getline(&line, &len, file)) != -1) {
           // printf("Retrieved line of length %zu :\n", read);
-          char tmpPath[COUNT_OF(path)];
-          strcpy(tmpPath, path);
+          char *tmpPath = strdup(path);
 
           // Combine path and line to be the path to the *file*
           strcat(strcat(tmpPath, "/"), line);
@@ -130,6 +129,8 @@ int main(int argc, char **argv)
           }
           char *hash = getHash(tmpPath);
           printf("%s %s", line, hash);
+
+          free(tmpPath);
       }
     } else {
       close(fd[0]);
