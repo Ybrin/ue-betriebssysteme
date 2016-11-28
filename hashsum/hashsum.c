@@ -129,7 +129,15 @@ int main(int argc, char **argv)
           }
           char *hash = getResultForFile(tmpPath, "md5sum");
           char *fileType = getResultForFile(tmpPath, "file");
-          printf("%s %s %s", line, hash, fileType);
+          // printf("%s %s %s", line, hash, fileType);
+
+          strcat(strcat(strcat(line, " "), strcat(hash, " ")), fileType);
+
+          // Remove newline characters
+          char *k;
+          if ((k = strchr(line, '\n')) != NULL) { *k = '\0'; }
+
+          (void) printf("%s\n", line);
 
           free(tmpPath);
       }
