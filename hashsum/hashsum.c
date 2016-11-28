@@ -127,6 +127,12 @@ int main(int argc, char **argv)
             // printf("%s\n", "Is this a file? This is not a file!");
             continue;
           }
+
+          if (ignore != NULL && strncmp(ignore, line, strlen(ignore)) == 0) {
+            continue;
+          }
+
+
           char *hash = getResultForFile(tmpPath, "md5sum");
           char *fileType = getResultForFile(tmpPath, "file");
           // printf("%s %s %s", line, hash, fileType);
@@ -136,10 +142,10 @@ int main(int argc, char **argv)
           (void) printf("%s\n", line);
 
           // Remove newline characters
-          char *k;
-          if ((k = strchr(line, '\n')) != NULL) { *k = '\0'; }
+          // char *k;
+          // if ((k = strchr(line, '\n')) != NULL) { *k = '\0'; }
 
-          (void) printf("%s\n", line);
+          // (void) printf("%s\n", line);
 
           // free(tmpPath);
       }
