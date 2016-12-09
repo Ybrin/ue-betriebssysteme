@@ -1,0 +1,110 @@
+\hypertarget{hashsum_8c}{}\section{hashsum.\+c File Reference}
+\label{hashsum_8c}\index{hashsum.\+c@{hashsum.\+c}}
+
+
+hashsum for assignment 2  
+
+
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$stdlib.\+h$>$}\newline
+{\ttfamily \#include $<$assert.\+h$>$}\newline
+{\ttfamily \#include $<$unistd.\+h$>$}\newline
+{\ttfamily \#include $<$sys/wait.\+h$>$}\newline
+{\ttfamily \#include $<$sys/stat.\+h$>$}\newline
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{hashsum_8c_ae537fef967d9fbfad304aec7b2b85948}{}\label{hashsum_8c_ae537fef967d9fbfad304aec7b2b85948} 
+\#define {\bfseries C\+O\+U\+N\+T\+\_\+\+OF}(x)~(sizeof(x)/sizeof(x\mbox{[}0\mbox{]}))
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \hyperlink{hashsum_8c_ad96d407a911fbb914fa8e4cfbf2faf0f}{usage} (void)
+\item 
+static char $\ast$ \hyperlink{hashsum_8c_a6cf74d3a5c2745093aa8ac4306020ff0}{get\+Result\+For\+File} (char $\ast$path, char $\ast$command)
+\item 
+static int \hyperlink{hashsum_8c_ae9e543957d3cf36edff114b1af44c323}{is\+File} (char $\ast$path)
+\item 
+int \hyperlink{hashsum_8c_a3c04138a5bfe5d72780bb7e82a18e627}{main} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{hashsum_8c_a289c5900d90626d909f0a85d5a0ed61d}{}\label{hashsum_8c_a289c5900d90626d909f0a85d5a0ed61d} 
+static char $\ast$ {\bfseries program\+\_\+name} = \char`\"{}client\char`\"{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+hashsum for assignment 2 
+
+\begin{DoxyAuthor}{Author}
+Koray Koska \href{mailto:e1528624@student.tuwien.ac.at}{\tt e1528624@student.\+tuwien.\+ac.\+at} 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+24.\+11.\+2016
+\end{DoxyDate}
+This program implements the hashsum function from assignment 2 
+
+\subsection{Function Documentation}
+\hypertarget{hashsum_8c_a6cf74d3a5c2745093aa8ac4306020ff0}{}\label{hashsum_8c_a6cf74d3a5c2745093aa8ac4306020ff0} 
+\index{hashsum.\+c@{hashsum.\+c}!get\+Result\+For\+File@{get\+Result\+For\+File}}
+\index{get\+Result\+For\+File@{get\+Result\+For\+File}!hashsum.\+c@{hashsum.\+c}}
+\subsubsection{\texorpdfstring{get\+Result\+For\+File()}{getResultForFile()}}
+{\footnotesize\ttfamily static char $\ast$ get\+Result\+For\+File (\begin{DoxyParamCaption}\item[{char $\ast$}]{path,  }\item[{char $\ast$}]{command }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Executes the given command with the given path as the only argument. Returns the first line which this command outputs to stout.
+
+
+\begin{DoxyParams}{Parameters}
+{\em path} & the path to the file \\
+\hline
+{\em command} & the command which should be executed \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the string which will be returned by the given command 
+\end{DoxyReturn}
+\hypertarget{hashsum_8c_ae9e543957d3cf36edff114b1af44c323}{}\label{hashsum_8c_ae9e543957d3cf36edff114b1af44c323} 
+\index{hashsum.\+c@{hashsum.\+c}!is\+File@{is\+File}}
+\index{is\+File@{is\+File}!hashsum.\+c@{hashsum.\+c}}
+\subsubsection{\texorpdfstring{is\+File()}{isFile()}}
+{\footnotesize\ttfamily static int is\+File (\begin{DoxyParamCaption}\item[{char $\ast$}]{path }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Returns 1 iff the given path is a file, 0 otherwise
+
+
+\begin{DoxyParams}{Parameters}
+{\em path} & the path to the assumpted file \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if the given path points to a file, 0 if not 
+\end{DoxyReturn}
+\hypertarget{hashsum_8c_a3c04138a5bfe5d72780bb7e82a18e627}{}\label{hashsum_8c_a3c04138a5bfe5d72780bb7e82a18e627} 
+\index{hashsum.\+c@{hashsum.\+c}!main@{main}}
+\index{main@{main}!hashsum.\+c@{hashsum.\+c}}
+\subsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily int main (\begin{DoxyParamCaption}\item[{int}]{argc,  }\item[{char $\ast$$\ast$}]{argv }\end{DoxyParamCaption})}
+
+The starting point of the program
+
+
+\begin{DoxyParams}{Parameters}
+{\em argc} & the number of arguments \\
+\hline
+{\em argv} & the arguments \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 if successful, something other if not 
+\end{DoxyReturn}
+\hypertarget{hashsum_8c_ad96d407a911fbb914fa8e4cfbf2faf0f}{}\label{hashsum_8c_ad96d407a911fbb914fa8e4cfbf2faf0f} 
+\index{hashsum.\+c@{hashsum.\+c}!usage@{usage}}
+\index{usage@{usage}!hashsum.\+c@{hashsum.\+c}}
+\subsubsection{\texorpdfstring{usage()}{usage()}}
+{\footnotesize\ttfamily static void usage (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Prints the usage of this program and terminates with E\+X\+I\+T\+\_\+\+F\+A\+I\+L\+U\+RE 
