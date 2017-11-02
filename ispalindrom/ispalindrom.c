@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+#include <ctype.h>
 
 /// Name of this program
 static const char *programName = "palindrom";
@@ -58,19 +59,50 @@ int main(int argc, char *const *argv) {
   }
 
   char *buffer;
-  size_t buffsize = 40;
-  size_t characters;
-
-  buffer = (char *)malloc(buffsize * sizeof(char));
+  buffer = (char *)malloc(40 * sizeof(char));
   if (buffer == NULL) {
     (void) fprintf(stderr, "%s\n", "Unable to allocate buffer.");
     exit(EXIT_FAILURE);
   }
 
-  printf("Type something: ");
-  characters = getline(&buffer, &buffsize, stdin);
-  printf("%zu characters were read.\n", characters);
-  printf("You typed: '%s'\n", buffer);
+  // printf("Type something: ");
+
+  int c = getchar();
+  int count = 0;
+  while (c != '\n') {
+    // Ignore whitespaces if -s option is enabled
+    if (ignoreWhitespaces && c == 32) {
+      c = getchar();
+      continue;
+    }
+    if (count >= 40) {
+      (void) fprintf(stderr, "You can't type in more than 40 characters.\n");
+      exit(EXIT_FAILURE);
+    }
+    if (ignoreCase) {
+      buffer[count] = tolower(c);
+    } else {
+      buffer[count] = c;
+    }
+    c = getchar();
+    count++;
+  }
+
+  for (int i = 0; i < count; i++) {
+    if (buffer[i] != buffer[count - 1 -  i]) {
+      // printf("%s\n", "This is not a palindrom!");
+      for (int j = 0; j < count; j++) {
+        printf("%c", buffer[j]);
+      }
+      printf("%s\n", " ist kein Palindrom");
+      exit(EXIT_SUCCESS);
+    }
+  }
+
+  for (int i = 0; i < count; i++) {
+    printf("%c", buffer[i]);
+  }
+  printf("%s\n", " ist ein Palindrom");
 
   // Free allocated memory
   free(buffer);
