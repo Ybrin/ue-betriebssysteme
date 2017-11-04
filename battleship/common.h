@@ -72,4 +72,67 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE])
     }
 }
 
+/**
+ * Returns the corresponding int for a vertical ship position character.
+ *
+ * Returns 255 if a wrong character is given (e.g.: Not A-J).
+ */
+static uint8_t vchartoi(char c) {
+  switch (c) {
+    case 'A':
+      return 0;
+    case 'B':
+      return 1;
+    case 'C':
+      return 2;
+    case 'D':
+      return 3;
+    case 'E':
+      return 4;
+    case 'F':
+      return 5;
+    case 'G':
+      return 6;
+    case 'H':
+      return 7;
+    case 'I':
+      return 8;
+    case 'J':
+      return 9;
+    default:
+      return 255;
+  }
+}
+
+/**
+ * Returns the corresponding int for a horizontal ship position character.
+ *
+ * Returns 255 if a wrong character is given (e.g.: Not '0'-'9').
+ */
+static uint8_t hchartoi(char c) {
+  switch (c) {
+    case '0':
+      return 0;
+    case '1':
+      return 1;
+    case '2':
+      return 2;
+    case '3':
+      return 3;
+    case '4':
+      return 4;
+    case '5':
+      return 5;
+    case '6':
+      return 6;
+    case '7':
+      return 7;
+    case '8':
+      return 8;
+    case '9':
+      return 9;
+    default:
+      return 255;
+  }
+}
 #endif // COMMON_H

@@ -62,28 +62,40 @@ static const char *programName = "server";
  *  - a function which checks whether a client's shot hit any of your ships
  */
 
+/**
+ * A ship with start and end coordinates
+ */
+typedef struct {
+  uint8_t startVertical;
+  uint8_t startHorizontal;
+  uint8_t endVertical;
+  uint8_t endHorizontal;
+} Ship;
+
+/**
+ * An array of ships
+ */
+Ship *ships = NULL;
+
+/**
+ * Prints the usage and exits.
+ */
+static void usage(void);
+
+/**
+ * Parses command line arguments
+ */
+static void parseArgs(int argc, char *argv[]);
+
 int main(int argc, char *argv[]) {
   /* TODO
    * Add code to parse the command line arguments, maybe as a separate
    * function.
    */
 
-  if (argc > 0) {
-    programName = argv[0];
-  }
+  printf("Testiclus");
 
-  int getopt_result;
-  while ((getopt_result = getopt(argc, argv, "p")) != -1) {
-    switch (getopt_result) {
-      case 'p':
-        break;
-      case '?':
-        printf("Gay");
-	break;
-      default:
-        assert(0);
-    }
-  }
+  parseArgs(argc, argv);
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
@@ -141,3 +153,76 @@ int main(int argc, char *argv[]) {
    * cleanup
    */
 }
+
+/**
+ * Prints the usage of this program and terminates with EXIT_FAILURE
+ */
+static void usage(void) {
+  (void) fprintf(stderr, "Usage: %s [-p PORT] SHIP1...\n",
+                 programName);
+  exit(EXIT_FAILURE);
+}
+
+static void parseArgs(int argc, char *argv[]) {
+  if (argc > 0) {
+    programName = argv[0];
+  }
+
+  int shipStart = 1;
+
+  long altPort = 0;
+  if (argc > 1 && strcmp("-p", argv[1]) == 0) {
+    // Ships start at index 3 now
+    shipStart = 3;
+
+    if (argc > 2) {
+      altPort = strtol(argv[2], NULL, 10);
+      if (altPort == 0) {
+        (void) fprintf(stderr, "Port must be a valid port\n");
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      usage();
+    }
+  }
+
+  int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
+  int shipEnd = shipStart + (shipCount - 1) + 1;
+  if (argc != shipEnd) {
+    (void) fprintf(stderr, "Please specify exactly 6 ships.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  ships = malloc(shipCount * sizeof(Ship));
+
+  int currShip = 0;
+  for (int i = shipStart; i < shipEnd; i++) {
+    char *curr = argv[i];
+    if (strlen(curr) != 4) {
+      (void) fprintf(
+          stderr,
+          "Ship coordinates must be exactly 4 characters long (e.g.: C2E2)\n"
+      );
+      exit(EXIT_FAILURE);
+    }
+
+    printf("WWWWWWWWAAAAAAAAA");
+
+    uint8_t startVertical = vchartoi(curr[0]);
+    uint8_t startHorizontal = hchartoi(curr[1]); 
+    uint8_t endVertical = vchartoi(curr[2]);
+    uint8_t endHorizontal = hchartoi(curr[3]);
+
+    printf("WWW");
+
+    if (startVertical == 255 || startHorizontal == 255 || endVertical == 255 || endHorizontal == 255) {
+      (void) fprintf(stderr, "%s are not valid ship coordinates!", curr);
+      exit(EXIT_FAILURE);
+    }
+
+    printf("Wall Corract");
+  }
+
+  printf("Oll Korrekt");
+}
+
