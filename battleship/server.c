@@ -107,6 +107,11 @@ Ship **ships = NULL;
 uint8_t map[MAP_SIZE][MAP_SIZE];
 
 /**
+ * The current round.
+ */
+int currentRound = 0;
+
+/**
  * Prints the usage and exits.
  */
 static void usage(void);
@@ -212,7 +217,6 @@ int main(int argc, char *argv[]) {
    */
 
   int won = 0;
-  int rounds = 0;
 
   printf("Starting main loop...\n");
   fflush(stdout);
@@ -233,16 +237,23 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    parseRequest(buf[0]);
+    won = parseRequest(buf[0]);
 
     free(buf);
 
-    rounds++;
+    currentRound++;
   }
 
   /* TODO
    * cleanup
    */
+   if (won == 1) {
+     // Won!
+     printf("Won in %i rounds!\n", currentRound);
+   } else if (won == 2) {
+     // Lost :/
+     printf("Game lost\n");
+   }
 
   close(connfd);
   close(sockfd);
@@ -372,7 +383,8 @@ static void setupMap() {
 /**
  * Parses a one byte request.
  *
- * Returns 0 if not finished yet, 1 if the game was won.
+ * Returns 0 if not finished yet, 1 if the game was won,
+ * and 2 if the game was finished but not won.
  */
 static int parseRequest(char req) {
   char parityMask = 0x01;
@@ -405,11 +417,22 @@ static int parseRequest(char req) {
   char horizontal = coordinates / 10;
   char vertical = coordinates % 10;
 
+  if (horizontal < 0 || horizontal > MAP_SIZE - 1 || vertical < 0 || vertical > MAP_SIZE - 1) {
+    // Wrong coordinates
+    char res = 0x0C;
+    write(connfd, &res, 1);
+
+    (void) fprintf(stderr, "Invalid coordinate\n");
+    exit(3);
+  }
+
   int hit = 0;
-  if (map[horizontal][vertical] == SQUARE_SHIP) {
-    map[horizontal][vertical] = SQUARE_SHIP_HIT;
+  if (map[(uint8_t) horizontal][(uint8_t) vertical] == SQUARE_SHIP) {
+    map[(uint8_t) horizontal][(uint8_t) vertical] = SQUARE_SHIP_HIT;
     hit = 1;
   }
+
+  print_map_server(map);
 
   if (checkWon()) {
     // 0000 0100
@@ -425,13 +448,35 @@ static int parseRequest(char req) {
     write(connfd, &res, 1);
     return 1;
   } else {
+    char res = 0x00;
+    if (currentRound >= MAX_ROUNDS - 1) {
+      // Status == 1 ==> 0000 0100
+      res = 0x04;
+    } else {
+      // Status == 0 ==> 0000 0000
+      res = 0x00;
+    }
     // Not won yet
     if (hit) {
-      // Check everything...
+      // TODO: Check everything...
+      res = res | 0xFD;
     } else {
-      // Check everything...
+      // No hit, hit == 0 ==> ???? ??00
+      res = res | 0xFC;
+    }
+
+    write(connfd, &res, 1);
+
+    if (currentRound >= MAX_ROUNDS - 1) {
+      // Game finished and lost :/
+      return 2;
+    } else {
+      // Game goes on...
+      return 0;
     }
   }
+
+  return 0;
 }
 
 /**

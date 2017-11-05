@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
+#include <arpa/inet.h>
 
 // Assertions, errors, signals:
 #include <assert.h>
@@ -57,17 +58,17 @@ uint8_t map[MAP_SIZE][MAP_SIZE];
 /**
  * Setup the map with ships.
  */
-static void setupMap();
+static void setupMap(void);
 
 /**
  * Send a request and parse the response.
  */
-static int sendRequest();
+static int sendRequest(void);
 
 /**
  * Parses the response from the server.
  */
-static int parseResponse();
+static int parseResponse(char res);
 
 int main(int argc, char *argv[]) {
   struct sockaddr_in addr;
@@ -98,13 +99,13 @@ int main(int argc, char *argv[]) {
 
     // Read response
     char *buf = malloc(sizeof(char));
-    int bytes = read(connfd, buf, 1);
+    int bytes = read(sockfd, buf, 1);
     if (bytes == 0) {
       (void) fprintf(stderr, "read reached EOF.\n");
       exit(EXIT_FAILURE);
     }
 
-    int won = parseResponse(buf[0]);
+    won = parseResponse(buf[0]);
 
     free(buf);
 
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
     // Won!
   } else if (won == 2) {
     // Lost :/
-    printf("Game lost");
+    printf("Game lost\n");
   }
 
   close(sockfd);
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
 /**
  * Setup the map.
  */
-static void setupMap() {
+static void setupMap(void) {
   memset(&map, SQUARE_UNKNOWN, sizeof(map));
   print_map(map);
   fflush(stdout);
@@ -136,7 +137,7 @@ static void setupMap() {
  *
  * Returns -1 on error and a value >0 on success.
  */
-static int sendRequest() {
+static int sendRequest(void) {
   for (int i = 0; i < MAP_SIZE; i++) {
     for (int j = 0; j < MAP_SIZE; j++) {
       // map[j][i]
@@ -209,8 +210,8 @@ static int parseResponse(char res) {
     print_map(map);
     fflush(stdout);
 
-    return 0
+    return 0;
   }
 
-  return 0
+  return 0;
 }

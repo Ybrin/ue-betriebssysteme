@@ -77,7 +77,7 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE])
  *
  * Returns 255 if a wrong character is given (e.g.: Not A-J).
  */
-static uint8_t vchartoi(char c) {
+static inline uint8_t vchartoi(char c) {
   switch (c) {
     case 'A':
       return 0;
@@ -109,7 +109,7 @@ static uint8_t vchartoi(char c) {
  *
  * Returns 255 if a wrong character is given (e.g.: Not '0'-'9').
  */
-static uint8_t hchartoi(char c) {
+static inline uint8_t hchartoi(char c) {
   switch (c) {
     case '0':
       return 0;
