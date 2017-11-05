@@ -135,4 +135,12 @@ static uint8_t hchartoi(char c) {
       return 255;
   }
 }
+
+static inline void printCharBitwise(char c) {
+  int i;
+  for (i = 0; i < 8; i++) {
+      printf("%d", !!((c << i) & 0x80));
+  }
+  printf("\n");
+}
 #endif // COMMON_H

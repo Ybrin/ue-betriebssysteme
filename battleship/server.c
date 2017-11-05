@@ -1,6 +1,6 @@
 /**
  * @file server.c
- * @author OSUE Team <osue-team@cps.tuwien.ac.at>
+ * @author Koray Koska <e1528624@student.tuwien.ac.at>
  * @date 2017-10-06
  *
  * @brief Server for OSUE exercise 1B `Battleship'.
@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <math.h>
 
 // Assertions, errors, signals:
 #include <assert.h>
@@ -46,6 +47,27 @@ static int connfd = -1;                 // connection file descriptor
 /// Name of this program
 static const char *programName = "server";
 
+#define SQUARE_SHIP 3
+#define SQUARE_NOTHING 4
+#define SQUARE_SHIP_HIT 5
+
+static inline void print_map_server(uint8_t map[MAP_SIZE][MAP_SIZE])
+{
+    int x, y;
+
+    printf("  ");
+    for (x = 0; x < MAP_SIZE; x++)
+        printf("%c ", 'A' + x);
+    printf("\n");
+
+    for (y = 0; y < MAP_SIZE; y++) {
+        printf("%c ", '0' + y);
+        for (x = 0; x < MAP_SIZE; x++)
+            printf("%c ", map[x][y] ? ((map[x][y] == SQUARE_SHIP) ? 's' : (map[x][y] == SQUARE_NOTHING) ? ' ' : 'h') : ' ');
+        printf("\n");
+    }
+}
+
 /* TODO
  * You might want to add further static variables here, for instance to save
  * the programe name (argv[0]) since you should include it in all messages.
@@ -70,12 +92,19 @@ typedef struct {
   uint8_t startHorizontal;
   uint8_t endVertical;
   uint8_t endHorizontal;
+
+  int sunk;
 } Ship;
 
 /**
  * An array of ships
  */
 Ship **ships = NULL;
+
+/**
+ * The game map.
+ */
+uint8_t map[MAP_SIZE][MAP_SIZE];
 
 /**
  * Prints the usage and exits.
@@ -87,13 +116,32 @@ static void usage(void);
  */
 static void parseArgs(int argc, char *argv[]);
 
+/**
+ * Setup the map with ships.
+ */
+static void setupMap();
+
+/**
+ * Parses a one byte request.
+ */
+static int parseRequest(char req);
+
+/**
+ * Checks whether the game is won or not.
+ */
+static int checkWon();
+
 int main(int argc, char *argv[]) {
   /* TODO
    * Add code to parse the command line arguments, maybe as a separate
    * function.
    */
 
+  // Parse command line arguments
   parseArgs(argc, argv);
+
+  // Setup map
+  setupMap();
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
@@ -105,39 +153,71 @@ int main(int argc, char *argv[]) {
   /* TODO
    * check for errors
    */
+  if (res != 0) {
+    (void) fprintf(stderr, "Something bad happened with getaddinfo().\n");
+    exit(EXIT_FAILURE);
+  }
 
   sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
   /* TODO
    * check for errors
    */
+  if (sockfd == -1) {
+    (void) fprintf(stderr, "Something bad happened while getting a socket().\n");
+    exit(EXIT_FAILURE);
+  }
 
   int val = 1;
   res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val);
   /* TODO
    * check for errors
    */
+  if (res != 0) {
+    (void) fprintf(stderr, "Something bad happened while setting socket options setsockopt().\n");
+    exit(EXIT_FAILURE);
+  }
 
   res = bind(sockfd, ai->ai_addr, ai->ai_addrlen);
   /* TODO
    * check for errors
    */
+  if (res != 0) {
+    (void) fprintf(stderr, "Something bad happened while binding the socket bind().\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Listening on port %s...\n", port);
 
   res = listen(sockfd, 1);
   /* TODO
    * check for errors
    */
+  if (res != 0) {
+    (void) fprintf(stderr, "Something bad happened while listening for connections listen().\n");
+    exit(EXIT_FAILURE);
+  }
 
   connfd = accept(sockfd, NULL, NULL);
   /* TODO
    * check for errors
    */
+  if (connfd == -1) {
+    (void) fprintf(stderr, "Something bad happened while accepting a connection accept().\n");
+    exit(EXIT_FAILURE);
+  }
 
   /* TODO
    * Here you might want to add variables to keep track of the game status,
    * for instance the number of rounds that have been played.
    */
 
-  while (false) {
+  int won = 0;
+  int rounds = 0;
+
+  printf("Starting main loop...\n");
+  fflush(stdout);
+
+  while (!won) {
       /* TODO
        * add code to:
        *  - wait for a request from the client
@@ -145,11 +225,29 @@ int main(int argc, char *argv[]) {
        *  - check whether a ship was hit and determine the status to return
        *  - send an according response to the client
        */
+    char *buf = malloc(sizeof(char));
+
+    int bytes = read(connfd, buf, 1);
+    if (bytes == 0) {
+      (void) fprintf(stderr, "read reached EOF.\n");
+      exit(EXIT_FAILURE);
+    }
+
+    parseRequest(buf[0]);
+
+    free(buf);
+
+    rounds++;
   }
 
   /* TODO
    * cleanup
    */
+
+  close(connfd);
+  close(sockfd);
+
+  return EXIT_SUCCESS;
 }
 
 /**
@@ -175,13 +273,19 @@ static void parseArgs(int argc, char *argv[]) {
 
     if (argc > 2) {
       altPort = strtol(argv[2], NULL, 10);
-      if (altPort == 0) {
+      if (altPort <= 0 || altPort > pow(2, 16)) {
         (void) fprintf(stderr, "Port must be a valid port\n");
         exit(EXIT_FAILURE);
       }
     } else {
       usage();
     }
+  }
+  if (altPort != 0) {
+    int length = snprintf(NULL, 0, "%ld", altPort);
+    char* str = malloc(length + 1);
+    snprintf(str, length + 1, "%ld", altPort);
+    port = str;
   }
 
   int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
@@ -205,9 +309,9 @@ static void parseArgs(int argc, char *argv[]) {
     }
 
     uint8_t startVertical = vchartoi(curr[0]);
-    uint8_t startHorizontal = hchartoi(curr[1]); 
+    uint8_t startHorizontal = hchartoi(curr[1]);
     uint8_t endVertical = vchartoi(curr[2]);
-    uint8_t endHorizontal = hchartoi(curr[3]); 
+    uint8_t endHorizontal = hchartoi(curr[3]);
 
     if (startVertical == 255 || startHorizontal == 255 || endVertical == 255 || endHorizontal == 255) {
       (void) fprintf(stderr, "%s are not valid ship coordinates!", curr);
@@ -234,3 +338,116 @@ static void parseArgs(int argc, char *argv[]) {
   }
 }
 
+/**
+ * Setup the map.
+ */
+static void setupMap() {
+  memset(&map, SQUARE_NOTHING, sizeof(map));
+
+  int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
+  for (int i = 0; i < shipCount; i++) {
+    Ship *s = ships[i];
+
+    if (s->startVertical == s->endVertical) {
+      uint8_t hStart = (s->startHorizontal < s->endHorizontal) ? s->startHorizontal : s->endHorizontal;
+      uint8_t hEnd = (s->startHorizontal > s->endHorizontal) ? s->startHorizontal : s->endHorizontal;
+
+      for (uint8_t j = hStart; j <= hEnd; j++) {
+        map[s->startVertical][j] = SQUARE_SHIP;
+      }
+    } else if (s->startHorizontal == s->endHorizontal) {
+      uint8_t vStart = (s->startVertical < s->endVertical) ? s->startVertical : s->endVertical;
+      uint8_t vEnd = (s->startVertical > s->endVertical) ? s->startVertical : s->endVertical;
+
+      for (uint8_t j = vStart; j <= vEnd; j++) {
+        map[j][s->startHorizontal] = SQUARE_SHIP;
+      }
+    }
+  }
+
+  print_map_server(map);
+  fflush(stdout);
+}
+
+/**
+ * Parses a one byte request.
+ *
+ * Returns 0 if not finished yet, 1 if the game was won.
+ */
+static int parseRequest(char req) {
+  char parityMask = 0x01;
+  char parityBit = (req >> 7) & parityMask;
+
+  char cMask = 0x01;
+  char check = (req & cMask) ^
+    ((req >> 1) & cMask) ^
+    ((req >> 2) & cMask) ^
+    ((req >> 3) & cMask) ^
+    ((req >> 4) & cMask) ^
+    ((req >> 5) & cMask) ^
+    ((req >> 6) & cMask);
+
+  if (check != parityBit) {
+    // Parity error 0000 1000
+    // e.g.: Status == 3
+    char pE = 0x08;
+    write(connfd, &pE, 1);
+
+    (void) fprintf(stderr, "Parity error\n");
+    exit(2);
+  }
+
+  // Oll Korrekt (O.K.). Parsing coordinates...
+
+  // Remove first bit (parity)
+  char coordinates = req & 0x7F;
+
+  char horizontal = coordinates / 10;
+  char vertical = coordinates % 10;
+
+  int hit = 0;
+  if (map[horizontal][vertical] == SQUARE_SHIP) {
+    map[horizontal][vertical] = SQUARE_SHIP_HIT;
+    hit = 1;
+  }
+
+  if (checkWon()) {
+    // 0000 0100
+    char res = 0x04;
+    if (hit) {
+      // Set hit, 3, 0000 0011
+      res = res | 0x03;
+    } else {
+      // Will actually never happen...
+      res = res | 0x00;
+    }
+
+    write(connfd, &res, 1);
+    return 1;
+  } else {
+    // Not won yet
+    if (hit) {
+      // Check everything...
+    } else {
+      // Check everything...
+    }
+  }
+}
+
+/**
+ * Checks whether the game is won or not.
+ *
+ * Returns 0 if the game was not won yet and 1 if it was.
+ */
+static int checkWon() {
+  for (int i = 0; i < MAP_SIZE; i++) {
+    for (int j = 0; j < MAP_SIZE; j++) {
+      if (map[j][i] == SQUARE_SHIP) {
+        return 0;
+      }
+    }
+  }
+
+  // Won
+  return 1;
+}
