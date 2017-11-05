@@ -74,6 +74,11 @@ static void usage(void);
  */
 static int parseResponse(char res);
 
+/**
+ * Delete squares next to ships
+ */
+static void deleteSquares(uint8_t horizontal, uint8_t vertical);
+
 int main(int argc, char *argv[]) {
 
   long altPort = 0;
@@ -101,7 +106,8 @@ int main(int argc, char *argv[]) {
 
   addr.sin_family = AF_INET;
   addr.sin_port = htons(altPort > 0 ? altPort : strtol(DEFAULT_PORT, NULL, 10));
-  inet_aton(altHost != NULL ? altHost : DEFAULT_HOST, &addr.sin_addr);
+  char *defaultHost = DEFAULT_HOST;
+  inet_aton(altHost != NULL ? altHost : defaultHost, &addr.sin_addr);
   memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
 
   sockfd = socket(AF_INET, SOCK_STREAM, 6);
@@ -155,8 +161,8 @@ int main(int argc, char *argv[]) {
  */
 static void setupMap(void) {
   memset(&map, SQUARE_UNKNOWN, sizeof(map));
-  print_map(map);
-  fflush(stdout);
+  // print_map(map);
+  // fflush(stdout);
 }
 
 /**
@@ -218,8 +224,8 @@ static int sendRequest(void) {
  */
 static int parseResponse(char res) {
   // Get bit 0 and 1 (hit)
-  printf("WTF: ");
-  printCharBitwise(res);
+  // printf("WTF: ");
+  // printCharBitwise(res);
   char hit = res & 0x03;
   // Get bit 2 and 3 (status)
   char status = (res >> 2) & 0x03;
@@ -242,12 +248,16 @@ static int parseResponse(char res) {
     // Game running. Save results...
     if (hit == 0) {
       map[currentHorizontal][currentVertical] = SQUARE_EMPTY;
-    } else if (hit == 1 || hit == 2) {
+    } else if (hit == 1) {
       map[currentHorizontal][currentVertical] = SQUARE_HIT;
+    } else if (hit == 2) {
+      map[currentHorizontal][currentVertical] = SQUARE_HIT;
+      // Squares next to this ship can't be ships...
+      deleteSquares(currentHorizontal, currentVertical);
     }
 
-    print_map(map);
-    fflush(stdout);
+    // print_map(map);
+    // fflush(stdout);
 
     return 0;
   }
@@ -262,4 +272,89 @@ static void usage(void) {
   (void) fprintf(stderr, "Usage: %s [-h HOST] [-p PORT]\n",
                  programName);
   exit(EXIT_FAILURE);
+}
+
+/**
+ * Delete squares next to ships
+ */
+static void deleteSquares(uint8_t horizontal, uint8_t vertical) {
+  if (horizontal > 0) {
+    for (int i = horizontal; i >= 0; i--) {
+      if (map[i][vertical] == SQUARE_HIT) {
+        if (i > 0 && map[i - 1][vertical] == SQUARE_UNKNOWN) {
+          map[i - 1][vertical] = SQUARE_EMPTY;
+        }
+        if (i < MAP_SIZE - 1 && map[i + 1][vertical] == SQUARE_UNKNOWN) {
+          map[i + 1][vertical] = SQUARE_EMPTY;
+        }
+
+        if (vertical > 0 && map[i][vertical - 1] == SQUARE_UNKNOWN) {
+          map[i][vertical - 1] = SQUARE_EMPTY;
+        }
+        if (vertical < MAP_SIZE - 1 && map[i][vertical + 1] == SQUARE_UNKNOWN) {
+          map[i][vertical + 1] = SQUARE_EMPTY;
+        }
+      }
+    }
+  }
+
+  if (horizontal < MAP_SIZE - 1) {
+    for (int i = horizontal; i < MAP_SIZE; i++) {
+      if (map[i][vertical] == SQUARE_HIT) {
+        if (i > 0 && map[i - 1][vertical] == SQUARE_UNKNOWN) {
+          map[i - 1][vertical] = SQUARE_EMPTY;
+        }
+        if (i < MAP_SIZE - 1 && map[i + 1][vertical] == SQUARE_UNKNOWN) {
+          map[i + 1][vertical] = SQUARE_EMPTY;
+        }
+
+        if (vertical > 0 && map[i][vertical - 1] == SQUARE_UNKNOWN) {
+          map[i][vertical - 1] = SQUARE_EMPTY;
+        }
+        if (vertical < MAP_SIZE - 1 && map[i][vertical + 1] == SQUARE_UNKNOWN) {
+          map[i][vertical + 1] = SQUARE_EMPTY;
+        }
+      }
+    }
+  }
+
+  if (vertical > 0) {
+    for (int i = vertical; i >= 0; i--) {
+      if (map[horizontal][i] == SQUARE_HIT) {
+        if (i > 0 && map[horizontal][i - 1] == SQUARE_UNKNOWN) {
+          map[horizontal][i - 1] = SQUARE_EMPTY;
+        }
+        if (i < MAP_SIZE - 1 && map[horizontal][i + 1] == SQUARE_UNKNOWN) {
+          map[horizontal][i + 1] = SQUARE_EMPTY;
+        }
+
+        if (horizontal > 0 && map[horizontal - 1][i] == SQUARE_UNKNOWN) {
+          map[horizontal - 1][i] = SQUARE_EMPTY;
+        }
+        if (horizontal < MAP_SIZE - 1 && map[horizontal + 1][i] == SQUARE_UNKNOWN) {
+          map[horizontal + 1][i] = SQUARE_EMPTY;
+        }
+      }
+    }
+  }
+
+  if (vertical < MAP_SIZE - 1) {
+    for (int i = vertical; i < MAP_SIZE; i++) {
+      if (map[horizontal][i] == SQUARE_HIT) {
+        if (i > 0 && map[horizontal][i - 1] == SQUARE_UNKNOWN) {
+          map[horizontal][i - 1] = SQUARE_EMPTY;
+        }
+        if (i < MAP_SIZE - 1 && map[horizontal][i + 1] == SQUARE_UNKNOWN) {
+          map[horizontal][i + 1] = SQUARE_EMPTY;
+        }
+
+        if (horizontal > 0 && map[horizontal - 1][i] == SQUARE_UNKNOWN) {
+          map[horizontal - 1][i] = SQUARE_EMPTY;
+        }
+        if (horizontal < MAP_SIZE - 1 && map[horizontal + 1][i] == SQUARE_UNKNOWN) {
+          map[horizontal + 1][i] = SQUARE_EMPTY;
+        }
+      }
+    }
+  }
 }

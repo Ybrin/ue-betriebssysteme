@@ -27,7 +27,7 @@
 #define SHIP_CNT_LEN4   1   // 1 ship of length 4
 
 // Maximum number of rounds after which the client loses the game:
-#define MAX_ROUNDS      100
+#define MAX_ROUNDS      80
 
 // Suggested values to save information about the squares of the map:
 #define SQUARE_UNKNOWN  0 // the square has not been targeted yet
@@ -71,6 +71,31 @@ static inline void print_map(uint8_t map[MAP_SIZE][MAP_SIZE])
         printf("\n");
     }
 }
+
+// Server specific
+
+#define SQUARE_SHIP 3
+#define SQUARE_NOTHING 4
+#define SQUARE_SHIP_HIT 5
+
+static inline void print_map_server(uint8_t map[MAP_SIZE][MAP_SIZE])
+{
+    int x, y;
+
+    printf("  ");
+    for (x = 0; x < MAP_SIZE; x++)
+        printf("%c ", 'A' + x);
+    printf("\n");
+
+    for (y = 0; y < MAP_SIZE; y++) {
+        printf("%c ", '0' + y);
+        for (x = 0; x < MAP_SIZE; x++)
+            printf("%c ", map[x][y] ? ((map[x][y] == SQUARE_SHIP) ? 's' : (map[x][y] == SQUARE_NOTHING) ? ' ' : 'h') : ' ');
+        printf("\n");
+    }
+}
+
+// End Server specific
 
 /**
  * Returns the corresponding int for a vertical ship position character.

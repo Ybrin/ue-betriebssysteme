@@ -47,27 +47,6 @@ static int connfd = -1;                 // connection file descriptor
 /// Name of this program
 static const char *programName = "server";
 
-#define SQUARE_SHIP 3
-#define SQUARE_NOTHING 4
-#define SQUARE_SHIP_HIT 5
-
-static inline void print_map_server(uint8_t map[MAP_SIZE][MAP_SIZE])
-{
-    int x, y;
-
-    printf("  ");
-    for (x = 0; x < MAP_SIZE; x++)
-        printf("%c ", 'A' + x);
-    printf("\n");
-
-    for (y = 0; y < MAP_SIZE; y++) {
-        printf("%c ", '0' + y);
-        for (x = 0; x < MAP_SIZE; x++)
-            printf("%c ", map[x][y] ? ((map[x][y] == SQUARE_SHIP) ? 's' : (map[x][y] == SQUARE_NOTHING) ? ' ' : 'h') : ' ');
-        printf("\n");
-    }
-}
-
 /* TODO
  * You might want to add further static variables here, for instance to save
  * the programe name (argv[0]) since you should include it in all messages.
@@ -223,8 +202,8 @@ int main(int argc, char *argv[]) {
 
   int won = 0;
 
-  printf("Starting main loop...\n");
-  fflush(stdout);
+  // printf("Starting main loop...\n");
+  // fflush(stdout);
 
   while (!won) {
       /* TODO
@@ -293,15 +272,12 @@ static void parseArgs(int argc, char *argv[]) {
         (void) fprintf(stderr, "Port must be a valid port\n");
         exit(EXIT_FAILURE);
       }
+      if (altPort != 0) {
+        port = argv[2];
+      }
     } else {
       usage();
     }
-  }
-  if (altPort != 0) {
-    int length = snprintf(NULL, 0, "%ld", altPort);
-    char* str = malloc(length + 1);
-    snprintf(str, length + 1, "%ld", altPort);
-    port = str;
   }
 
   int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
@@ -340,6 +316,7 @@ static void parseArgs(int argc, char *argv[]) {
     ship->endVertical = endVertical;
     ship->endHorizontal = endHorizontal;
 
+    /*
     printf(
         "Ship coordinates: %i %i %i %i\n",
         ship->startVertical,
@@ -347,7 +324,7 @@ static void parseArgs(int argc, char *argv[]) {
         ship->endVertical,
         ship->endHorizontal
     );
-    fflush(stdout);
+    fflush(stdout);*/
 
     ships[currShip] = ship;
     currShip++;
@@ -381,8 +358,8 @@ static void setupMap(void) {
     }
   }
 
-  print_map_server(map);
-  fflush(stdout);
+  // print_map_server(map);
+  // fflush(stdout);
 }
 
 /**
@@ -439,7 +416,7 @@ static int parseRequest(char req) {
     hit = 1;
   }
 
-  print_map_server(map);
+  // print_map_server(map);
 
   if (checkWon()) {
     // 0000 0100
@@ -467,10 +444,10 @@ static int parseRequest(char req) {
     if (hit) {
       // TODO: Check everything...
       if (sunk(horizontal, vertical)) {
-        printf("SHIP SUNK!\n");
+        // printf("SHIP SUNK!\n");
         res = res | 0x02;
       } else {
-        printf("SHIP NOT SUNK!\n");
+        // printf("SHIP NOT SUNK!\n");
         res = res | 0x01;
       }
     } else {
