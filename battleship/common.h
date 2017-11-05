@@ -27,7 +27,7 @@
 #define SHIP_CNT_LEN4   1   // 1 ship of length 4
 
 // Maximum number of rounds after which the client loses the game:
-#define MAX_ROUNDS      80
+#define MAX_ROUNDS      100
 
 // Suggested values to save information about the squares of the map:
 #define SQUARE_UNKNOWN  0 // the square has not been targeted yet

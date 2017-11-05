@@ -38,7 +38,6 @@
 #include "common.h"
 
 // Static variables for things you might want to access from several functions:
-static const char *port = DEFAULT_PORT; // the port to bind to
 
 // Static variables for resources that should be freed before exiting:
 static int sockfd = -1;                 // socket file descriptor
@@ -66,16 +65,43 @@ static void setupMap(void);
 static int sendRequest(void);
 
 /**
+ * Prints the usage and exits.
+ */
+static void usage(void);
+
+/**
  * Parses the response from the server.
  */
 static int parseResponse(char res);
 
 int main(int argc, char *argv[]) {
+
+  long altPort = 0;
+  char *altHost = NULL;
+
+  int getopt_result;
+  while ((getopt_result = getopt(argc, argv, "h:p:")) != -1) {
+    switch (getopt_result) {
+      case 'h':
+        altHost = optarg;
+        break;
+      case 'p':
+        altPort = strtol(optarg, NULL, 10);
+        if (altPort <= 0 || altPort > pow(2, 16)) {
+          (void) fprintf(stderr, "Port must be a valid port\n");
+          usage();
+        }
+        break;
+      default:
+        assert(0);
+    }
+  }
+
   struct sockaddr_in addr;
 
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(1280);
-  inet_aton("127.0.0.1", &addr.sin_addr);
+  addr.sin_port = htons(altPort > 0 ? altPort : strtol(DEFAULT_PORT, NULL, 10));
+  inet_aton(altHost != NULL ? altHost : DEFAULT_HOST, &addr.sin_addr);
   memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
 
   sockfd = socket(AF_INET, SOCK_STREAM, 6);
@@ -114,6 +140,7 @@ int main(int argc, char *argv[]) {
 
   if (won == 1) {
     // Won!
+    printf("I won :)\n");
   } else if (won == 2) {
     // Lost :/
     printf("Game lost\n");
@@ -149,8 +176,8 @@ static int sendRequest(void) {
         currentVertical = i;
 
         char coord = i + j * 10;
-        // First bit is the parity bit. Reset it to 1 for now...
-        coord = coord | 0x80;
+        // First bit is the parity bit. Reset it to 0 for now...
+        coord = coord & 0x7F;
 
         char pMask = 0x01;
         char parity = (coord & pMask) ^
@@ -165,6 +192,14 @@ static int sendRequest(void) {
 
         // Add parity bit to the request...
         char req = parity | coord;
+
+        /*
+        printf("COORD: ");
+        printCharBitwise(coord);
+        printf("PARITY: ");
+        printCharBitwise(parity);
+        printf("WRITING: ");
+        printCharBitwise(req);*/
 
         // Send request to the server
         return write(sockfd, &req, 1);
@@ -183,6 +218,8 @@ static int sendRequest(void) {
  */
 static int parseResponse(char res) {
   // Get bit 0 and 1 (hit)
+  printf("WTF: ");
+  printCharBitwise(res);
   char hit = res & 0x03;
   // Get bit 2 and 3 (status)
   char status = (res >> 2) & 0x03;
@@ -197,6 +234,8 @@ static int parseResponse(char res) {
     (void) fprintf(stderr, "Parity error\n");
     exit(2);
   } else if (status == 3) {
+    // printf("RES: ");
+    // printCharBitwise(res);
     (void) fprintf(stderr, "Invalid coordinate\n");
     exit(3);
   } else if (status == 0) {
@@ -214,4 +253,13 @@ static int parseResponse(char res) {
   }
 
   return 0;
+}
+
+/**
+ * Prints the usage and exits.
+ */
+static void usage(void) {
+  (void) fprintf(stderr, "Usage: %s [-h HOST] [-p PORT]\n",
+                 programName);
+  exit(EXIT_FAILURE);
 }

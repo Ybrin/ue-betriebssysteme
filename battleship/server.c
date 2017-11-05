@@ -124,7 +124,7 @@ static void parseArgs(int argc, char *argv[]);
 /**
  * Setup the map with ships.
  */
-static void setupMap();
+static void setupMap(void);
 
 /**
  * Parses a one byte request.
@@ -132,9 +132,14 @@ static void setupMap();
 static int parseRequest(char req);
 
 /**
+ * Sunk?
+ */
+static int sunk(uint8_t horizontal, uint8_t vertical);
+
+/**
  * Checks whether the game is won or not.
  */
-static int checkWon();
+static int checkWon(void);
 
 int main(int argc, char *argv[]) {
   /* TODO
@@ -352,7 +357,7 @@ static void parseArgs(int argc, char *argv[]) {
 /**
  * Setup the map.
  */
-static void setupMap() {
+static void setupMap(void) {
   memset(&map, SQUARE_NOTHING, sizeof(map));
 
   int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
@@ -405,6 +410,8 @@ static int parseRequest(char req) {
     char pE = 0x08;
     write(connfd, &pE, 1);
 
+    printf("REQ: ");
+    printCharBitwise(req);
     (void) fprintf(stderr, "Parity error\n");
     exit(2);
   }
@@ -459,10 +466,16 @@ static int parseRequest(char req) {
     // Not won yet
     if (hit) {
       // TODO: Check everything...
-      res = res | 0xFD;
+      if (sunk(horizontal, vertical)) {
+        printf("SHIP SUNK!\n");
+        res = res | 0x02;
+      } else {
+        printf("SHIP NOT SUNK!\n");
+        res = res | 0x01;
+      }
     } else {
       // No hit, hit == 0 ==> ???? ??00
-      res = res | 0xFC;
+      res = res & 0xFC;
     }
 
     write(connfd, &res, 1);
@@ -484,7 +497,7 @@ static int parseRequest(char req) {
  *
  * Returns 0 if the game was not won yet and 1 if it was.
  */
-static int checkWon() {
+static int checkWon(void) {
   for (int i = 0; i < MAP_SIZE; i++) {
     for (int j = 0; j < MAP_SIZE; j++) {
       if (map[j][i] == SQUARE_SHIP) {
@@ -494,5 +507,52 @@ static int checkWon() {
   }
 
   // Won
+  return 1;
+}
+
+/**
+ * Sunk?
+ */
+static int sunk(uint8_t horizontal, uint8_t vertical) {
+  if (horizontal > 0) {
+    for (int i = horizontal; i >= 0; i--) {
+      if (map[i][vertical] == SQUARE_SHIP) {
+        return 0;
+      } else if (map[i][vertical] == SQUARE_NOTHING) {
+        break;
+      }
+    }
+  }
+
+  if (horizontal < MAP_SIZE - 1) {
+    for (int i = horizontal; i < MAP_SIZE; i++) {
+      if (map[i][vertical] == SQUARE_SHIP) {
+        return 0;
+      } else if (map[i][vertical] == SQUARE_NOTHING) {
+        break;
+      }
+    }
+  }
+
+  if (vertical > 0) {
+    for (int i = vertical; i >= 0; i--) {
+      if (map[horizontal][i] == SQUARE_SHIP) {
+        return 0;
+      } else if (map[horizontal][i] == SQUARE_NOTHING) {
+        break;
+      }
+    }
+  }
+
+  if (vertical < MAP_SIZE - 1) {
+    for (int i = vertical; i < MAP_SIZE; i++) {
+      if (map[horizontal][i] == SQUARE_SHIP) {
+        return 0;
+      } else if (map[horizontal][i] == SQUARE_NOTHING) {
+        break;
+      }
+    }
+  }
+
   return 1;
 }
