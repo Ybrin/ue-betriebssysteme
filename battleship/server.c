@@ -75,7 +75,7 @@ typedef struct {
 /**
  * An array of ships
  */
-Ship *ships = NULL;
+Ship **ships = NULL;
 
 /**
  * Prints the usage and exits.
@@ -92,8 +92,6 @@ int main(int argc, char *argv[]) {
    * Add code to parse the command line arguments, maybe as a separate
    * function.
    */
-
-  printf("Testiclus");
 
   parseArgs(argc, argv);
 
@@ -189,11 +187,11 @@ static void parseArgs(int argc, char *argv[]) {
   int shipCount = SHIP_CNT_LEN2 + SHIP_CNT_LEN3 + SHIP_CNT_LEN4;
   int shipEnd = shipStart + (shipCount - 1) + 1;
   if (argc != shipEnd) {
-    (void) fprintf(stderr, "Please specify exactly 6 ships.\n");
+    (void) fprintf(stderr, "Please specify exactly %i ships.\n", shipCount);
     exit(EXIT_FAILURE);
   }
 
-  ships = malloc(shipCount * sizeof(Ship));
+  ships = malloc(shipCount * sizeof(Ship*));
 
   int currShip = 0;
   for (int i = shipStart; i < shipEnd; i++) {
@@ -206,23 +204,33 @@ static void parseArgs(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    printf("WWWWWWWWAAAAAAAAA");
-
     uint8_t startVertical = vchartoi(curr[0]);
     uint8_t startHorizontal = hchartoi(curr[1]); 
     uint8_t endVertical = vchartoi(curr[2]);
-    uint8_t endHorizontal = hchartoi(curr[3]);
-
-    printf("WWW");
+    uint8_t endHorizontal = hchartoi(curr[3]); 
 
     if (startVertical == 255 || startHorizontal == 255 || endVertical == 255 || endHorizontal == 255) {
       (void) fprintf(stderr, "%s are not valid ship coordinates!", curr);
       exit(EXIT_FAILURE);
     }
 
-    printf("Wall Corract");
-  }
+    Ship *ship = malloc(sizeof(Ship));
+    ship->startVertical = startVertical;
+    ship->startHorizontal = startHorizontal;
+    ship->endVertical = endVertical;
+    ship->endHorizontal = endHorizontal;
 
-  printf("Oll Korrekt");
+    printf(
+        "Ship coordinates: %i %i %i %i\n",
+        ship->startVertical,
+        ship->startHorizontal,
+        ship->endVertical,
+        ship->endHorizontal
+    );
+    fflush(stdout);
+
+    ships[currShip] = ship;
+    currShip++;
+  }
 }
 
