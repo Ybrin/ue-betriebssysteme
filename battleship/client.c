@@ -294,6 +294,8 @@ static void deleteSquares(uint8_t horizontal, uint8_t vertical) {
         if (vertical < MAP_SIZE - 1 && map[i][vertical + 1] == SQUARE_UNKNOWN) {
           map[i][vertical + 1] = SQUARE_EMPTY;
         }
+      } else {
+        break;
       }
     }
   }
@@ -314,6 +316,8 @@ static void deleteSquares(uint8_t horizontal, uint8_t vertical) {
         if (vertical < MAP_SIZE - 1 && map[i][vertical + 1] == SQUARE_UNKNOWN) {
           map[i][vertical + 1] = SQUARE_EMPTY;
         }
+      } else {
+        break;
       }
     }
   }
@@ -334,6 +338,8 @@ static void deleteSquares(uint8_t horizontal, uint8_t vertical) {
         if (horizontal < MAP_SIZE - 1 && map[horizontal + 1][i] == SQUARE_UNKNOWN) {
           map[horizontal + 1][i] = SQUARE_EMPTY;
         }
+      } else {
+        break;
       }
     }
   }
@@ -354,6 +360,8 @@ static void deleteSquares(uint8_t horizontal, uint8_t vertical) {
         if (horizontal < MAP_SIZE - 1 && map[horizontal + 1][i] == SQUARE_UNKNOWN) {
           map[horizontal + 1][i] = SQUARE_EMPTY;
         }
+      } else {
+        break;
       }
     }
   }
