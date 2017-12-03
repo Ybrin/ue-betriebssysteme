@@ -101,6 +101,8 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
   pid_t childPid = fork();
   if (childPid == -1) {
     (void) fprintf(stderr, "fork() call failed.\n");
+    close(pipes[0]);
+    close(pipes[1]);
     exit(EXIT_FAILURE);
   }
 
@@ -112,6 +114,7 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
     // dup2 stdout with write end
     if (dup2(pipes[1], STDOUT_FILENO) == -1) {
       (void) fprintf(stderr, "dup2() call failed.\n");
+      close(pipes[1]);
       exit(EXIT_FAILURE);
     }
 
@@ -120,6 +123,7 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
     if (system(buf) == -1) {
       (void) fprintf(stderr, "command() call failed.\n");
       free(buf);
+      close(pipes[1]);
       exit(EXIT_FAILURE);
     }
     free(buf);
@@ -135,6 +139,7 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
     // dup2 stdin with read end
     if (dup2(pipes[0], STDIN_FILENO) == -1) {
       (void) fprintf(stderr, "dup2() call failed.\n");
+      close(pipes[0]);
       exit(EXIT_FAILURE);
     }
 
@@ -142,12 +147,14 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
     if (waitpid(childPid, status, 0) == -1) {
       (void) fprintf(stderr, "waitpid() call failed.\n");
       free(status);
+      close(pipes[0]);
       exit(EXIT_FAILURE);
     }
 
     if (*status != 0) {
       (void) fprintf(stderr, "child process returned non zero exit code.\n");
       free(status);
+      close(pipes[0]);
       exit(EXIT_FAILURE);
     }
 
@@ -188,18 +195,27 @@ static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsig
   int pipes[2];
   if (pipe(pipes) != 0) {
     (void) fprintf(stderr, "pipe() call failed.\n");
+    recursiveFree(lines, linesCount);
     exit(EXIT_FAILURE);
   }
 
   int linesPipes[2];
   if (pipe(linesPipes) != 0) {
     (void) fprintf(stderr, "pipe() call failed.\n");
+    close(pipes[0]);
+    close(pipes[1]);
+    recursiveFree(lines, linesCount);
     exit(EXIT_FAILURE);
   }
 
   pid_t childPid = fork();
   if (childPid == -1) {
     (void) fprintf(stderr, "fork() call failed.\n");
+    close(pipes[0]);
+    close(pipes[1]);
+    close(linesPipes[0]);
+    close(linesPipes[1]);
+    recursiveFree(lines, linesCount);
     exit(EXIT_FAILURE);
   }
 
@@ -212,12 +228,16 @@ static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsig
     close(linesPipes[1]);
     if (dup2(linesPipes[0], STDIN_FILENO) == -1) {
       (void) fprintf(stderr, "dup2() call failed.\n");
+      close(pipes[1]);
+      close(linesPipes[0]);
       exit(EXIT_FAILURE);
     }
 
     // dup2 stdout with write end
     if (dup2(pipes[1], STDOUT_FILENO) == -1) {
       (void) fprintf(stderr, "dup2() call failed.\n");
+      close(pipes[1]);
+      close(linesPipes[0]);
       exit(EXIT_FAILURE);
     }
 
@@ -226,6 +246,8 @@ static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsig
     if (system(buf) == -1) {
       (void) fprintf(stderr, "command() call failed.\n");
       free(buf);
+      close(pipes[1]);
+      close(linesPipes[0]);
       exit(EXIT_FAILURE);
     }
     free(buf);
@@ -249,6 +271,8 @@ static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsig
     // dup2 stdin with read end
     if (dup2(pipes[0], STDIN_FILENO) == -1) {
       (void) fprintf(stderr, "dup2() call failed.\n");
+      close(pipes[0]);
+      recursiveFree(lines, linesCount);
       exit(EXIT_FAILURE);
     }
 
@@ -256,12 +280,16 @@ static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsig
     if (waitpid(childPid, status, 0) == -1) {
       (void) fprintf(stderr, "waitpid() call failed.\n");
       free(status);
+      close(pipes[0]);
+      recursiveFree(lines, linesCount);
       exit(EXIT_FAILURE);
     }
 
     if (*status != 0) {
       (void) fprintf(stderr, "child process returned non zero exit code.\n");
       free(status);
+      close(pipes[0]);
+      recursiveFree(lines, linesCount);
       exit(EXIT_FAILURE);
     }
 
