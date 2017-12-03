@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 
 /// Name of this program
 static const char *programName = "dsort";
@@ -21,9 +22,13 @@ static const char *programName = "dsort";
 
 static void getLines(char *command, char ***lines, unsigned int* linesCount);
 
+static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsigned int *uniqLinesCount);
+
 static void usage(void);
 
 static void recursiveFree(char** lines, unsigned int linesCount);
+
+static int stringCmp(const void *a, const void *b);
 
 // ******* End Function signatures *******
 
@@ -54,8 +59,26 @@ int main(int argc, char *argv[]) {
   // Run second command
   getLines(commandTwo, &lines, &linesCount);
 
+  /*for (int i = 0; i < linesCount; i++) {
+    printf("%s", lines[i]);
+  }*/
+
+  // Sort out lines
+  qsort(lines, linesCount, sizeof(char*), stringCmp);
+
+  /*printf("* Sorted *\n");
   for (int i = 0; i < linesCount; i++) {
     printf("%s", lines[i]);
+  }*/
+
+  // printf("*** AAA ***\n");
+
+  char **uniqLines = NULL;
+  unsigned int uniqLinesCount = 0;
+  uniq(lines, linesCount, &uniqLines, &uniqLinesCount);
+
+  for (int i = 0; i < uniqLinesCount; i++) {
+    printf("%s", uniqLines[i]);
   }
 
   // Free global stuff
@@ -92,10 +115,14 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
       exit(EXIT_FAILURE);
     }
 
-    if (system(command) == -1) {
+    char *buf = malloc(sizeof(char*) * 2048);
+    sprintf(buf, "%s%s%s", "/bin/bash -c \"", command, "\"");
+    if (system(buf) == -1) {
       (void) fprintf(stderr, "command() call failed.\n");
+      free(buf);
       exit(EXIT_FAILURE);
     }
+    free(buf);
 
     close(pipes[1]);
 
@@ -153,6 +180,115 @@ static void getLines(char *command, char ***lines, unsigned int* linesCount) {
 }
 
 /**
+ * Runs uniq -d on top of the given lines and writes the response
+ * to uniqLines.
+ */
+static void uniq(char **lines, unsigned int linesCount, char ***uniqLines, unsigned int *uniqLinesCount) {
+  // pipe
+  int pipes[2];
+  if (pipe(pipes) != 0) {
+    (void) fprintf(stderr, "pipe() call failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int linesPipes[2];
+  if (pipe(linesPipes) != 0) {
+    (void) fprintf(stderr, "pipe() call failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  pid_t childPid = fork();
+  if (childPid == -1) {
+    (void) fprintf(stderr, "fork() call failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (childPid == 0) {
+    // Child process. Run command and exit
+    // Close read end
+    close(pipes[0]);
+
+    // Lines!?
+    close(linesPipes[1]);
+    if (dup2(linesPipes[0], STDIN_FILENO) == -1) {
+      (void) fprintf(stderr, "dup2() call failed.\n");
+      exit(EXIT_FAILURE);
+    }
+
+    // dup2 stdout with write end
+    if (dup2(pipes[1], STDOUT_FILENO) == -1) {
+      (void) fprintf(stderr, "dup2() call failed.\n");
+      exit(EXIT_FAILURE);
+    }
+
+    char *buf = malloc(sizeof(char*) * 2048);
+    sprintf(buf, "%s%s%s", "/bin/bash -c \"", "uniq -d", "\"");
+    if (system(buf) == -1) {
+      (void) fprintf(stderr, "command() call failed.\n");
+      free(buf);
+      exit(EXIT_FAILURE);
+    }
+    free(buf);
+
+    close(pipes[1]);
+    close(linesPipes[0]);
+
+    exit(EXIT_SUCCESS);
+  } else {
+    // Parent process. Wait for child to exit and read from its stdout
+    // Close write end
+    close(pipes[1]);
+
+    close(linesPipes[0]);
+    // Write given lines to child process
+    for (int i = 0; i < linesCount; i++) {
+      write(linesPipes[1], lines[i], strlen(lines[i]));
+    }
+    close(linesPipes[1]);
+
+    // dup2 stdin with read end
+    if (dup2(pipes[0], STDIN_FILENO) == -1) {
+      (void) fprintf(stderr, "dup2() call failed.\n");
+      exit(EXIT_FAILURE);
+    }
+
+    int *status = malloc(sizeof(int));
+    if (waitpid(childPid, status, 0) == -1) {
+      (void) fprintf(stderr, "waitpid() call failed.\n");
+      free(status);
+      exit(EXIT_FAILURE);
+    }
+
+    if (*status != 0) {
+      (void) fprintf(stderr, "child process returned non zero exit code.\n");
+      free(status);
+      exit(EXIT_FAILURE);
+    }
+
+    // Read
+    char *line = malloc(sizeof(char) * 1024);
+    while (fgets(line, 1024, stdin) != NULL) {
+      if (*uniqLinesCount == 0) {
+        *uniqLines = malloc(sizeof(char*));
+      } else {
+        *uniqLines = realloc(*uniqLines, sizeof(char*) * (*uniqLinesCount + 1));
+      }
+      (*uniqLines)[*uniqLinesCount] = line;
+      (*uniqLinesCount)++;
+      line = malloc(sizeof(char) * 1024);
+    }
+    // Last allocated line won't be used
+    free(line);
+    // Reset stdin
+    clearerr(stdin);
+
+    free(status);
+
+    close(pipes[0]);
+  }
+}
+
+/**
  * Prints the usage of this program and terminates with EXIT_FAILURE
  */
 static void usage(void) {
@@ -169,4 +305,10 @@ static void recursiveFree(char** lines, unsigned int linesCount) {
     free(lines[i]);
   }
   free(lines);
+}
+
+static int stringCmp(const void *a, const void *b) {
+  const char **ia = (const char **)a;
+  const char **ib = (const char **)b;
+  return strcmp(*ia, *ib);
 }
