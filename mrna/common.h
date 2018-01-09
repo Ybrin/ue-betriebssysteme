@@ -6,6 +6,7 @@
  * @brief Commons for client and server.
  */
 
+#include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -20,7 +21,7 @@
 #define SHM_END_REACHED_BYTE (0x02)
 
 typedef struct {
-  // 0 idle, 1 used
+  // 0 idle, 1 used, debugging...
   uint8_t state;
   // First byte: command (or response status), rest is free for needed data.
   uint8_t data[SHM_MAX_DATA];

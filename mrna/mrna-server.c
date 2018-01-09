@@ -40,6 +40,9 @@
 // Semaphores
 #include <semaphore.h>
 
+// Signals
+#include <signal.h>
+
 
 /// Name of this program
 static const char *programName = "mrna-server";
@@ -58,6 +61,9 @@ static sem_t *sem3;
 
 /// The semaphore for clients to wait
 static sem_t *sem4;
+
+/// Signal handling
+static volatile sig_atomic_t wantsQuit = 0;
 
 /// All connected mrnas from clients and the count
 static uint8_t mrnaCount = 0;
@@ -95,9 +101,19 @@ static void submit(void);
 static void nextSequence(void);
 
 /**
+ * Reset command
+ */
+static void reset(void);
+
+/**
  * Reset shared memory data
  */
 static void resetSharedMemory(void);
+
+/**
+ * Catch signals
+ */
+static void catchSignals(int signo);
 
 
 int main(int argc, char *argv[]) {
@@ -110,6 +126,16 @@ int main(int argc, char *argv[]) {
   // Cleanup on exit
   if (atexit(cleanup) != 0) {
     fprintf(stderr, "Could not set atexit cleanup function.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Signal handlers
+  if (signal(SIGINT, catchSignals) == SIG_ERR) {
+    fprintf(stderr, "Signal handling impossible.\n");
+    exit(EXIT_FAILURE);
+  }
+  if (signal(SIGTERM, catchSignals) == SIG_ERR) {
+    fprintf(stderr, "Signal handling impossible.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -132,10 +158,14 @@ int main(int argc, char *argv[]) {
   }*/
 
   // Wait for the first client with sem2
-  int running = 1;
-  while (running) {
+  while (!wantsQuit) {
     // Wait until a client wants to send a request.
+    // printf("Waiting for 2...\n");
     if (sem_wait(sem2) != 0) {
+      // Let signal handler and atexit handle this
+      if (errno == EINTR) {
+        continue;
+      }
       fprintf(stderr, "sem_wait failed\n");
       exit(EXIT_FAILURE);
     }
@@ -148,24 +178,36 @@ int main(int argc, char *argv[]) {
         break;
       case 'n':
         nextSequence();
+        // printf("Sequenzo n\n");
         break;
       case 'r':
+        reset();
         break;
       default:
         break;
     }
 
-    // WTell client to start reading
+    // printf("Posting 4\n");
+
+    // Tell client to start reading
     if (sem_post(sem4) != 0) {
       fprintf(stderr, "sem_wait failed\n");
       exit(EXIT_FAILURE);
     }
 
+    // printf("Waiting for 3\n");
+
     // Wait for client to finish reading
     if (sem_wait(sem3) != 0) {
+      // Let signal handler and atexit handle this
+      if (errno == EINTR) {
+        continue;
+      }
       fprintf(stderr, "sem_wait failed\n");
       exit(EXIT_FAILURE);
     }
+
+    // printf("Posting 1\n");
 
     // We are done. Tell clients that they can send new requests now.
     if (sem_post(sem1) != 0) {
@@ -228,7 +270,7 @@ static void createSemaphores(void) {
   }}
 
 static void cleanup(void) {
-  printf("Cleaning up\n");
+  // printf("Cleaning up\n");
   // Cleanup
   if (munmap(sharedMemory, sizeof *sharedMemory) == -1) {
     fprintf(stderr, "munmap failed\n");
@@ -392,16 +434,34 @@ static void nextSequence(void) {
   sharedMemory->data[0] = SHM_SUCCESS_BYTE;
   sharedMemory->data[1] = start;
   sharedMemory->data[2] = end;
+  // Always starts with AMINO_START
+  sharedMemory->data[3] = AMINO_START;
   for (int i = 0; i < aminosCount; i++) {
-    sharedMemory->data[i + 3] = aminos[i];
+    sharedMemory->data[i + 4] = aminos[i];
   }
-  sharedMemory->data[aminosCount - 1 + 3] = SHM_END_BYTE;
+  sharedMemory->data[aminosCount - 1 + 4] = SHM_END_BYTE;
 
   // Save new pointer
   mrnaPointers[clientId] = pointer;
 }
 
+static void reset(void) {
+  uint8_t clientId = sharedMemory->data[1];
+  if (clientId >= mrnaCount) {
+    // Error
+    resetSharedMemory();
+    sharedMemory->data[0] = SHM_ERROR_BYTE;
+    sharedMemory->data[1] = SHM_END_BYTE;
+    return;
+  }
+
+  // Reset the pointer
+  mrnaPointers[clientId] = 0;
+}
+
 static void resetSharedMemory(void) {
+  // Debugging. Should be irrelevant because of our
+  // SHM_END_BYTE constant.
   for (int i = 0; i < SHM_MAX_DATA; i++) {
     sharedMemory->data[i] = 0x00;
   }
@@ -412,3 +472,6 @@ static void usage(void) {
   exit(EXIT_FAILURE);
 }
 
+static void catchSignals(int signo) {
+  wantsQuit = 1;
+}
