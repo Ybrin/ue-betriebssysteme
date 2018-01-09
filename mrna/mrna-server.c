@@ -106,6 +106,11 @@ static void nextSequence(void);
 static void reset(void);
 
 /**
+ * Quit command
+ */
+static void quit(void);
+
+/**
  * Reset shared memory data
  */
 static void resetSharedMemory(void);
@@ -182,6 +187,9 @@ int main(int argc, char *argv[]) {
         break;
       case 'r':
         reset();
+        break;
+      case 'q':
+        quit();
         break;
       default:
         break;
@@ -302,6 +310,10 @@ static void cleanup(void) {
   if (sem_unlink(SEM_4) == -1) {
     fprintf(stderr, "sem_unlink failed\n");
   }
+
+  // Free everything
+  free(mrnas);
+  free(mrnaPointers);
 }
 
 static void submit(void) {
@@ -360,6 +372,13 @@ static void nextSequence(void) {
   uint8_t end = 0;
 
   uint8_t *mrna = mrnas[clientId];
+  if (mrna == 0) {
+    // Error, client requested quit before.
+    resetSharedMemory();
+    sharedMemory->data[0] = SHM_ERROR_BYTE;
+    sharedMemory->data[1] = SHM_END_BYTE;
+    return;
+  }
   int pointer = mrnaPointers[clientId];
   int running = 1;
   while (running) {
@@ -457,6 +476,26 @@ static void reset(void) {
 
   // Reset the pointer
   mrnaPointers[clientId] = 0;
+}
+
+static void quit(void) {
+  uint8_t clientId = sharedMemory->data[1];
+  if (clientId >= mrnaCount) {
+    // Error
+    resetSharedMemory();
+    sharedMemory->data[0] = SHM_ERROR_BYTE;
+    sharedMemory->data[1] = SHM_END_BYTE;
+    return;
+  }
+
+  // Reset the pointer
+  mrnaPointers[clientId] = 0;
+  // Reset mrna
+  uint8_t *mrna = mrnas[clientId];
+  if (mrna != 0) {
+    free(mrna);
+  }
+  mrnas[clientId] = 0;
 }
 
 static void resetSharedMemory(void) {

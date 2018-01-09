@@ -102,6 +102,11 @@ static void nextSequence(void);
 static void reset(void);
 
 /**
+ * Quit command
+ */
+static void quit(void);
+
+/**
  * Cleanup resources
  */
 static void cleanup(void);
@@ -235,10 +240,12 @@ int main(int argc, char *argv[]) {
         reset();
         break;
       case 'q':
+        quit();
         printf("%s\n", "Close client.");
         wantsQuit = 1;
         break;
       default:
+        quit();
         printf("%s\n", "This is not a command. Bye.");
         wantsQuit = 1;
         break;
@@ -499,6 +506,44 @@ static void reset(void) {
   }
 
   printf("Reset. [0/%i]\n", currentMrnaCount);
+
+  // We are done reading. Tell the server about it.
+  if (sem_post(sem3) != 0) {
+    fprintf(stderr, "sem_wait failed\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
+static void quit(void) {
+  // Wait until we can start the request.
+  if (sem_wait(sem1) != 0) {
+    fprintf(stderr, "sem_wait failed\n");
+    exit(EXIT_FAILURE);
+  }
+  sharedMemory->data[0] = 'q';
+  sharedMemory->data[1] = clientId;
+  sharedMemory->data[2] = SHM_END_BYTE;
+
+  // Tell the server we are finished requesting.
+  if (sem_post(sem2) != 0) {
+    fprintf(stderr, "sem_wait failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Wait until we can read the response.
+  if (sem_wait(sem4) != 0) {
+    fprintf(stderr, "sem_wait failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int resp = sharedMemory->data[0];
+  if (resp == SHM_ERROR_BYTE) {
+    // We need to tell the server that we are finished reading
+    // or other clients will be stuck.
+    sem_post(sem3);
+    fprintf(stderr, "%s\n", "Something went wrong while requesting from the server.");
+    exit(EXIT_FAILURE);
+  }
 
   // We are done reading. Tell the server about it.
   if (sem_post(sem3) != 0) {
